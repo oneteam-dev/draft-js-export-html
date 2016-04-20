@@ -13,6 +13,9 @@ import type {CharacterMetaList} from 'draft-js-utils';
 
 type StringMap = {[key: string]: ?string};
 type AttrMap = {[key: string]: StringMap};
+type BoolMap = {[key: string]: ?boolean};
+
+BLOCK_TYPE.CHECKABLE_LIST_ITEM = 'checkable-list-item';
 
 const {
   BOLD,
@@ -28,7 +31,37 @@ const BREAK = '<br/>';
 // Map entity data to element attributes.
 const ENTITY_ATTR_MAP: AttrMap = {
   [ENTITY_TYPE.LINK]: {url: 'href', rel: 'rel', target: 'target', title: 'title', className: 'class'},
-  [ENTITY_TYPE.IMAGE]: {src: 'src', height: 'height', width: 'width', alt: 'alt', className: 'class'},
+  [ENTITY_TYPE.IMAGE]: {src: 'src', height: 'height', width: 'width', alt: 'alt', className: 'class', 'data-original-url': 'href'},
+};
+const OLD_COLORS = [
+  'rgb(0, 0, 0)', 'rgb(230, 0, 0)', 'rgb(255, 153, 0)', 'rgb(255, 255, 0)',
+  'rgb(0, 138, 0)', 'rgb(0, 102, 204)', 'rgb(153, 51, 255)', 'rgb(255, 255, 255)',
+  'rgb(250, 204, 204)', 'rgb(255, 235, 204)', 'rgb(255, 255, 204)', 'rgb(204, 232, 204)',
+  'rgb(204, 224, 245)', 'rgb(235, 214, 255)', 'rgb(187, 187, 187)', 'rgb(240, 102, 102)',
+  'rgb(255, 194, 102)', 'rgb(255, 255, 102)', 'rgb(102, 185, 102)', 'rgb(102, 163, 224)',
+  'rgb(194, 133, 255)', 'rgb(136, 136, 136)', 'rgb(161, 0, 0)', 'rgb(178, 107, 0)',
+  'rgb(178, 178, 0)', 'rgb(0, 97, 0)', 'rgb(0, 71, 178)', 'rgb(107, 36, 178)',
+  'rgb(68, 68, 68)', 'rgb(92, 0, 0)', 'rgb(102, 61, 0)', 'rgb(102, 102, 0)',
+  'rgb(0, 55, 0)', 'rgb(0, 41, 102)', 'rgb(61, 20, 10)'
+];
+
+const OLD_INLINE_STYLES_SIZE = {
+  SIZE_NORMAL: { fontSize: 13 },
+  SIZE_SMALLER: { fontSize: 10 },
+  SIZE_LARGER: { fontSize: 24 },
+  SIZE_HUGE: { fontSize: 32 }
+};
+
+const OLD_INLINE_STYLES = OLD_COLORS.reduce((result, color, i) => {
+  result[`COLOR${i}`] = { color };
+  result[`BACKGROUND_COLOR${i}`] = { backgroundColor: color };
+  return result;
+}, OLD_INLINE_STYLES_SIZE);
+
+const OLD_BLOCK_TYPES = {
+  ALIGN_CENTER: 'align-center',
+  ALIGN_RIGHT: 'align-right',
+  ALIGN_JUSTIFY: 'align-justify'
 };
 
 // Map entity data to element attributes.
@@ -61,6 +94,17 @@ const DATA_TO_ATTR = {
   },
 };
 
+function decamelize(str, sep) {
+  if (typeof str !== 'string') {
+    throw new TypeError('Expected a string');
+  }
+  sep = typeof sep === 'undefined' ? '_' : sep;
+  return str
+    .replace(/([a-z\d])([A-Z])/g, '$1' + sep + '$2')
+    .replace(/([A-Z]+)([A-Z][a-z\d]+)/g, '$1' + sep + '$2')
+    .toLowerCase();
+}
+
 // The reason this returns an array is because a single block might get wrapped
 // in two tags.
 function getTags(blockType: string): Array<string> {
@@ -79,19 +123,23 @@ function getTags(blockType: string): Array<string> {
       return ['h6'];
     case BLOCK_TYPE.UNORDERED_LIST_ITEM:
     case BLOCK_TYPE.ORDERED_LIST_ITEM:
+    case BLOCK_TYPE.CHECKABLE_LIST_ITEM:
       return ['li'];
     case BLOCK_TYPE.BLOCKQUOTE:
       return ['blockquote'];
     case BLOCK_TYPE.CODE:
       return ['pre', 'code'];
+    case BLOCK_TYPE.ATOMIC:
+      return ['figure'];
     default:
-      return ['p'];
+      return ['div'];
   }
 }
 
 function getWrapperTag(blockType: string): ?string {
   switch (blockType) {
     case BLOCK_TYPE.UNORDERED_LIST_ITEM:
+    case BLOCK_TYPE.CHECKABLE_LIST_ITEM:
       return 'ul';
     case BLOCK_TYPE.ORDERED_LIST_ITEM:
       return 'ol';
@@ -108,9 +156,11 @@ class MarkupGenerator {
   output: Array<string>;
   totalBlocks: number;
   wrapperTag: ?string;
+  checkedStateMap: BoolMap;
 
-  constructor(contentState: ContentState) {
+  constructor(contentState: ContentState, checkedStateMap: BoolMap) {
     this.contentState = contentState;
+    this.checkedStateMap = checkedStateMap;
   }
 
   generate(): string {
@@ -182,7 +232,15 @@ class MarkupGenerator {
   writeStartTag(blockType) {
     let tags = getTags(blockType);
     for (let tag of tags) {
-      this.output.push(`<${tag}>`);
+      if (blockType === OLD_BLOCK_TYPES.ALIGN_RIGHT) {
+        this.output.push(`<${tag} style="text-align: right;">`);
+      } else if (blockType === OLD_BLOCK_TYPES.ALIGN_CENTER) {
+        this.output.push(`<${tag} style="text-align: center;">`);
+      } else if (blockType === OLD_BLOCK_TYPES.ALIGN_JUSTIFY) {
+        this.output.push(`<${tag} style="text-align: justify;">`);
+      } else {
+        this.output.push(`<${tag}>`);
+      }
     }
   }
 
@@ -232,6 +290,23 @@ class MarkupGenerator {
     return entityPieces.map(([entityKey, stylePieces]) => {
       let content = stylePieces.map(([text, style]) => {
         let content = encodeContent(text);
+
+        const oldStyles = style.toArray()
+          .filter(style => Object.keys(OLD_INLINE_STYLES).indexOf(style) !== -1);
+        if (oldStyles.length > 0) {
+          const styles = oldStyles.reduce((result, style) => {
+            return Object.keys(OLD_INLINE_STYLES[style]).reduce((r, prop) => {
+              r[prop] = OLD_INLINE_STYLES[style][prop];
+              return r;
+            }, result);
+          }, {});
+          const stringifyStyles = Object.keys(styles).map(prop => {
+            const val = prop === 'fontSize' ? `${styles[prop]}px` : styles[prop];
+            return `${decamelize(prop, '-')}: ${val};`;
+          }).join(' ');
+          content = `<span style="${stringifyStyles}">${content}</span>`;
+        }
+
         // These are reverse alphabetical by tag name.
         if (style.has(BOLD)) {
           content = `<strong>${content}</strong>`;
@@ -250,6 +325,10 @@ class MarkupGenerator {
           // block in a `<code>` so don't wrap inline code elements.
           content = (blockType === BLOCK_TYPE.CODE) ? content : `<code>${content}</code>`;
         }
+        if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+          const isChecked = this.checkedStateMap[block.getKey()];
+          content = `<input type="checkbox" ${(isChecked ? 'checked ' : '')}/>${content}`;
+        }
         return content;
       }).join('');
       let entity = entityKey ? Entity.get(entityKey) : null;
@@ -261,7 +340,7 @@ class MarkupGenerator {
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
         let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
-        return `<img${strAttrs}/>`;
+        return `<a href="${attrs.href}"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
       } else {
         return content;
       }
@@ -305,6 +384,7 @@ function canHaveDepth(blockType: string): boolean {
   switch (blockType) {
     case BLOCK_TYPE.UNORDERED_LIST_ITEM:
     case BLOCK_TYPE.ORDERED_LIST_ITEM:
+    case BLOCK_TYPE.CHECKABLE_LIST_ITEM:
       return true;
     default:
       return false;
@@ -328,6 +408,6 @@ function encodeAttr(text: string): string {
     .split('"').join('&quot;');
 }
 
-export default function stateToHTML(content: ContentState): string {
-  return new MarkupGenerator(content).generate();
+export default function stateToHTML(content: ContentState, checkedStateMap: BoolMap): string {
+  return new MarkupGenerator(content, checkedStateMap).generate();
 }

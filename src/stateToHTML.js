@@ -238,6 +238,8 @@ class MarkupGenerator {
         this.output.push(`<${tag} style="text-align: center;">`);
       } else if (blockType === OLD_BLOCK_TYPES.ALIGN_JUSTIFY) {
         this.output.push(`<${tag} style="text-align: justify;">`);
+      } else if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+        this.output.push(`<${tag} class="task-list-item">`);
       } else {
         this.output.push(`<${tag}>`);
       }
@@ -327,7 +329,7 @@ class MarkupGenerator {
         }
         if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
           const isChecked = this.checkedStateMap[block.getKey()];
-          content = `<input type="checkbox" ${(isChecked ? 'checked ' : '')}/>${content}`;
+          content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
         }
         return content;
       }).join('');

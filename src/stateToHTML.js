@@ -327,10 +327,6 @@ class MarkupGenerator {
           // block in a `<code>` so don't wrap inline code elements.
           content = (blockType === BLOCK_TYPE.CODE) ? content : `<code>${content}</code>`;
         }
-        if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
-          const isChecked = this.checkedStateMap[block.getKey()];
-          content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
-        }
         return content;
       }).join('');
       let entity = entityKey ? Entity.get(entityKey) : null;
@@ -343,6 +339,10 @@ class MarkupGenerator {
         let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
         return `<a href="${attrs.href}" target="${attrs.target}" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
       } else {
+        if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+          const isChecked = this.checkedStateMap[block.getKey()];
+          content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
+        }
         return content;
       }
     }).join('');

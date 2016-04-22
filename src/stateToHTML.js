@@ -338,11 +338,10 @@ class MarkupGenerator {
       if (entityType != null && entityType === ENTITY_TYPE.LINK) {
         let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
-        return `<a${strAttrs}>${content}</a>`;
+        return `<a${strAttrs} download>${content}</a>`;
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
         let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
-        let strAttrs = stringifyAttrs(attrs);
-        return `<a href="${attrs.href}"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
+        return `<a href="${attrs.href}" target="${attrs.target}" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
       } else {
         return content;
       }

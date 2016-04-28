@@ -28,11 +28,27 @@ const {
 const INDENT = '  ';
 const BREAK = '<br/>';
 
+const IFRAME = 'IFRAME';
+
 // Map entity data to element attributes.
 const ENTITY_ATTR_MAP: AttrMap = {
   [ENTITY_TYPE.LINK]: {url: 'href', rel: 'rel', target: 'target', title: 'title', className: 'class'},
   [ENTITY_TYPE.IMAGE]: {src: 'src', height: 'height', width: 'width', alt: 'alt', className: 'class', 'data-original-url': 'href'},
+  [IFRAME]: {
+    src: 'src',
+    height: 'height',
+    width: 'width',
+    name: 'name',
+    title: 'title',
+    className: 'class',
+    allowfullscreen: 'allowfullscreen',
+    webkitallowfullscreen: 'webkitallowfullscreen',
+    mozallowfullscreen: 'mozallowfullscreen',
+    frameborder: 'frameborder',
+    sandbox: 'sandbox'
+  },
 };
+
 const OLD_COLORS = [
   'rgb(0, 0, 0)', 'rgb(230, 0, 0)', 'rgb(255, 153, 0)', 'rgb(255, 255, 0)',
   'rgb(0, 138, 0)', 'rgb(0, 102, 204)', 'rgb(153, 51, 255)', 'rgb(255, 255, 255)',
@@ -65,34 +81,19 @@ const OLD_BLOCK_TYPES = {
 };
 
 // Map entity data to element attributes.
-const DATA_TO_ATTR = {
-  [ENTITY_TYPE.LINK](entityType: string, entity: EntityInstance): StringMap {
-    let attrMap = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? ENTITY_ATTR_MAP[entityType] : {};
-    let data = entity.getData();
-    let attrs = {};
-    for (let dataKey of Object.keys(data)) {
-      let dataValue = data[dataKey];
-      if (attrMap.hasOwnProperty(dataKey)) {
-        let attrKey = attrMap[dataKey];
-        attrs[attrKey] = dataValue;
-      }
+function dataToAttr(entityType: string, entity: EntityInstance): StringMap {
+  let attrMap = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? ENTITY_ATTR_MAP[entityType] : {};
+  let data = entity.getData();
+  let attrs = {};
+  for (let dataKey of Object.keys(data)) {
+    let dataValue = data[dataKey];
+    if (attrMap.hasOwnProperty(dataKey)) {
+      let attrKey = attrMap[dataKey];
+      attrs[attrKey] = dataValue;
     }
-    return attrs;
-  },
-  [ENTITY_TYPE.IMAGE](entityType: string, entity: EntityInstance): StringMap {
-    let attrMap = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? ENTITY_ATTR_MAP[entityType] : {};
-    let data = entity.getData();
-    let attrs = {};
-    for (let dataKey of Object.keys(data)) {
-      let dataValue = data[dataKey];
-      if (attrMap.hasOwnProperty(dataKey)) {
-        let attrKey = attrMap[dataKey];
-        attrs[attrKey] = dataValue;
-      }
-    }
-    return attrs;
-  },
-};
+  }
+  return attrs;
+}
 
 function decamelize(str, sep) {
   if (typeof str !== 'string') {
@@ -332,12 +333,16 @@ class MarkupGenerator {
       let entity = entityKey ? Entity.get(entityKey) : null;
       let entityType = (entity == null) ? null : entity.getType();
       if (entityType != null && entityType === ENTITY_TYPE.LINK) {
-        let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
+        let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
         return `<a${strAttrs} download>${content}</a>`;
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
-        let attrs = DATA_TO_ATTR.hasOwnProperty(entityType) ? DATA_TO_ATTR[entityType](entityType, entity) : null;
+        let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         return `<a href="${attrs.href}" target="${attrs.target}" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
+      } else if (entityType != null && entityType === IFRAME) {
+        let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
+        let strAttrs = stringifyAttrs(attrs);
+        return `<iframe${strAttrs}></iframe>`;
       } else {
         if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
           const isChecked = this.checkedStateMap[block.getKey()];

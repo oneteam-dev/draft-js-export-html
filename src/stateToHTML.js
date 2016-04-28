@@ -29,10 +29,12 @@ const INDENT = '  ';
 const BREAK = '<br/>';
 
 const IFRAME = 'IFRAME';
+const DOWNLOAD_LINK = 'DOWNLOAD_LINK';
 
 // Map entity data to element attributes.
 const ENTITY_ATTR_MAP: AttrMap = {
-  [ENTITY_TYPE.LINK]: {url: 'href', rel: 'rel', target: 'target', title: 'title', className: 'class'},
+  [DOWNLOAD_LINK]: {url: 'href', rel: 'rel', title: 'title', className: 'class', size: 'size', name: 'name'},
+  [ENTITY_TYPE.LINK]: {url: 'href', rel: 'rel', title: 'title', className: 'class'},
   [ENTITY_TYPE.IMAGE]: {src: 'src', height: 'height', width: 'width', alt: 'alt', className: 'class', 'data-original-url': 'href'},
   [IFRAME]: {
     src: 'src',
@@ -332,24 +334,31 @@ class MarkupGenerator {
       }).join('');
       let entity = entityKey ? Entity.get(entityKey) : null;
       let entityType = (entity == null) ? null : entity.getType();
-      if (entityType != null && entityType === ENTITY_TYPE.LINK) {
+
+      if (entityType != null && entityType === DOWNLOAD_LINK) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
-        return `<a${strAttrs} download>${content}</a>`;
+        return `<a href="${attrs.url}" target="_blank" data-name="${attrs.name}" data-size="${attrs.size}" download>${content}</a>`;
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
-        return `<a href="${attrs.href}" target="${attrs.target}" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
+        return `<a href="${attrs.href}" target="_blank" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;
       } else if (entityType != null && entityType === IFRAME) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
         return `<iframe${strAttrs}></iframe>`;
-      } else {
-        if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
-          const isChecked = this.checkedStateMap[block.getKey()];
-          content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
-        }
-        return content;
       }
+
+      if (entityType != null && entityType === ENTITY_TYPE.LINK) {
+        let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
+        let strAttrs = stringifyAttrs(attrs);
+        content = `<a${strAttrs}>${content}</a>`;
+      }
+      if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+        let isChecked = this.checkedStateMap[block.getKey()];
+        content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
+      }
+
+      return content;
     }).join('');
   }
 

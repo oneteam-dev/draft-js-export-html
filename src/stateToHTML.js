@@ -351,7 +351,7 @@ class MarkupGenerator {
       if (entityType != null && entityType === ENTITY_TYPE.LINK) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
-        content = `<a${strAttrs}>${content}</a>`;
+        content = `<a${strAttrs} target="_blank">${content}</a>`;
       }
       if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
         let isChecked = this.checkedStateMap[block.getKey()];

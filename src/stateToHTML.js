@@ -47,7 +47,8 @@ const ENTITY_ATTR_MAP: AttrMap = {
     webkitallowfullscreen: 'webkitallowfullscreen',
     mozallowfullscreen: 'mozallowfullscreen',
     frameborder: 'frameborder',
-    sandbox: 'sandbox'
+    sandbox: 'sandbox',
+    style: 'style'
   },
 };
 
@@ -338,7 +339,7 @@ class MarkupGenerator {
       if (entityType != null && entityType === DOWNLOAD_LINK) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
-        return `<a href="${attrs.url}" target="_blank" data-name="${attrs.name}" data-size="${attrs.size}" download>${content}</a>`;
+        return `<a href="${attrs.href}" target="_blank" data-name="${attrs.name}" data-size="${attrs.size}" download>${content}</a>`;
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         return `<a href="${attrs.href}" target="_blank" class="uploaded-image"><img src="${attrs.src}" alt="${attrs.alt}" /></a>`;

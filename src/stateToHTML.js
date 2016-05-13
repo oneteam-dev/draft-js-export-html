@@ -294,6 +294,9 @@ class MarkupGenerator {
     let charMetaList: CharacterMetaList = block.getCharacterList();
     let entityPieces = getEntityRanges(text, charMetaList);
     return entityPieces.map(([entityKey, stylePieces]) => {
+      let entity = entityKey ? Entity.get(entityKey) : null;
+      let entityType = (entity == null) ? null : entity.getType();
+
       let content = stylePieces.map(([text, style]) => {
         let content = encodeContent(text);
 
@@ -331,11 +334,13 @@ class MarkupGenerator {
           // block in a `<code>` so don't wrap inline code elements.
           content = (blockType === BLOCK_TYPE.CODE) ? content : `<code>${content}</code>`;
         }
+        if (entityType != null && entityType === ENTITY_TYPE.LINK) {
+          let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
+          let strAttrs = stringifyAttrs(attrs);
+          content = `<a${strAttrs} target="_blank">${content}</a>`;
+        }
         return content;
       }).join('');
-      let entity = entityKey ? Entity.get(entityKey) : null;
-      let entityType = (entity == null) ? null : entity.getType();
-
       if (entityType != null && entityType === DOWNLOAD_LINK) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
@@ -347,18 +352,10 @@ class MarkupGenerator {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
         return `<iframe${strAttrs}></iframe>`;
-      }
-
-      if (entityType != null && entityType === ENTITY_TYPE.LINK) {
-        let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
-        let strAttrs = stringifyAttrs(attrs);
-        content = `<a${strAttrs} target="_blank">${content}</a>`;
-      }
-      if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+      } else if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
         let isChecked = this.checkedStateMap[block.getKey()];
         content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
       }
-
       return content;
     }).join('');
   }

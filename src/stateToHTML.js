@@ -7,6 +7,7 @@ import {
   ENTITY_TYPE,
   INLINE_STYLE,
 } from 'draft-js-utils';
+import urlRegex from 'url-regex';
 
 import type {ContentState, ContentBlock, EntityInstance} from 'draft-js';
 import type {CharacterMetaList} from 'draft-js-utils';
@@ -82,6 +83,8 @@ const OLD_BLOCK_TYPES = {
   ALIGN_RIGHT: 'align-right',
   ALIGN_JUSTIFY: 'align-justify'
 };
+
+const URL_REGEX = urlRegex();
 
 // Map entity data to element attributes.
 function dataToAttr(entityType: string, entity: EntityInstance): StringMap {
@@ -300,6 +303,7 @@ class MarkupGenerator {
 
       let content = stylePieces.map(([text, style]) => {
         let content = encodeContent(text);
+        let originalContent = content;
 
         const oldStyles = style.toArray()
           .filter(style => Object.keys(OLD_INLINE_STYLES).indexOf(style) !== -1);
@@ -339,6 +343,8 @@ class MarkupGenerator {
           let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
           let strAttrs = stringifyAttrs(attrs);
           content = `<a${strAttrs} target="_blank">${content}</a>`;
+        } else if (URL_REGEX.test(originalContent)) {
+          content = content.replace(URL_REGEX, (match) => `<a href="${match}" target="_blank">${match}</a>`);
         }
         return content;
       }).join('');

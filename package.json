@@ -12,7 +12,8 @@
     "test-src": "mocha src/__tests__/*.js src/**/__tests__/*.js"
   },
   "dependencies": {
-    "draft-js-utils": "^0.1.4"
+    "draft-js-utils": "^0.1.4",
+    "url-regex": "^3.2.0"
   },
   "peerDependencies": {
     "draft-js": "^0.5.0",

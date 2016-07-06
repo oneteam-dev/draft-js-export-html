@@ -293,7 +293,8 @@ class MarkupGenerator {
     text = this.preserveWhitespace(text);
     let charMetaList: CharacterMetaList = block.getCharacterList();
     let entityPieces = getEntityRanges(text, charMetaList);
-    return entityPieces.map(([entityKey, stylePieces]) => {
+
+    let ret = entityPieces.map(([entityKey, stylePieces]) => {
       let entity = entityKey ? Entity.get(entityKey) : null;
       let entityType = (entity == null) ? null : entity.getType();
 
@@ -343,7 +344,6 @@ class MarkupGenerator {
       }).join('');
       if (entityType != null && entityType === DOWNLOAD_LINK) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
-        let strAttrs = stringifyAttrs(attrs);
         return `<a href="${attrs.href}" target="_blank" data-name="${attrs.name}" data-size="${attrs.size}" download>${content}</a>`;
       } else if (entityType != null && entityType === ENTITY_TYPE.IMAGE) {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
@@ -352,12 +352,16 @@ class MarkupGenerator {
         let attrs = ENTITY_ATTR_MAP.hasOwnProperty(entityType) ? dataToAttr(entityType, entity) : null;
         let strAttrs = stringifyAttrs(attrs);
         return `<iframe${strAttrs}></iframe>`;
-      } else if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
-        let isChecked = this.checkedStateMap[block.getKey()];
-        content = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled /><span>${content}</span>`;
       }
       return content;
     }).join('');
+
+    if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
+      let isChecked = this.checkedStateMap[block.getKey()];
+      ret = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled />${ret}`;
+    }
+
+    return ret;
   }
 
   preserveWhitespace(text: string): string {

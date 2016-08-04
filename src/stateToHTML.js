@@ -358,7 +358,7 @@ class MarkupGenerator {
 
     if (blockType === BLOCK_TYPE.CHECKABLE_LIST_ITEM) {
       let isChecked = this.checkedStateMap[block.getKey()];
-      ret = `<input type="checkbox"${(isChecked ? ' checked ' : ' ')}disabled />${ret}`;
+      ret = `<input type="checkbox"${isChecked ? ' checked ' : ' '}disabled /><span>${ret}</span>`;
     }
 
     return ret;

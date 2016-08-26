@@ -155,6 +155,18 @@ function getWrapperTag(blockType: string): ?string {
   }
 }
 
+function insertAnchorLink(content: string): string {
+  const el = document.createElement('div');
+  el.innerHTML = content;
+  const child = getChildNodeDeep(el);
+  child.innerHTML = child.textContent.replace(URL_REGEX, (match) => `<a href="${match}" target="_blank">${match}</a>`);
+  return el.innerHTML;
+}
+
+function getChildNodeDeep(node: Node): Node {
+  return node.childElementCount > 0 ? getChildNodeDeep(node.children[0]) : node;
+}
+
 class MarkupGenerator {
   blocks: Array<ContentBlock>;
   contentState: ContentState;
@@ -344,7 +356,7 @@ class MarkupGenerator {
           let strAttrs = stringifyAttrs(attrs);
           content = `<a${strAttrs} target="_blank">${content}</a>`;
         } else if (URL_REGEX.test(originalContent)) {
-          content = content.replace(URL_REGEX, (match) => `<a href="${match}" target="_blank">${match}</a>`);
+          content = insertAnchorLink(content);
         }
         return content;
       }).join('');

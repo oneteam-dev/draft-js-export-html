@@ -49,7 +49,7 @@ const ENTITY_ATTR_MAP: AttrMap = {
     mozallowfullscreen: 'mozallowfullscreen',
     frameborder: 'frameborder',
     sandbox: 'sandbox',
-    style: 'style'
+    style: 'style',
   },
 };
 
@@ -62,26 +62,26 @@ const OLD_COLORS = [
   'rgb(194, 133, 255)', 'rgb(136, 136, 136)', 'rgb(161, 0, 0)', 'rgb(178, 107, 0)',
   'rgb(178, 178, 0)', 'rgb(0, 97, 0)', 'rgb(0, 71, 178)', 'rgb(107, 36, 178)',
   'rgb(68, 68, 68)', 'rgb(92, 0, 0)', 'rgb(102, 61, 0)', 'rgb(102, 102, 0)',
-  'rgb(0, 55, 0)', 'rgb(0, 41, 102)', 'rgb(61, 20, 10)'
+  'rgb(0, 55, 0)', 'rgb(0, 41, 102)', 'rgb(61, 20, 10)',
 ];
 
 const OLD_INLINE_STYLES_SIZE = {
-  SIZE_NORMAL: { fontSize: 13 },
-  SIZE_SMALLER: { fontSize: 10 },
-  SIZE_LARGER: { fontSize: 24 },
-  SIZE_HUGE: { fontSize: 32 }
+  SIZE_NORMAL: {fontSize: 13},
+  SIZE_SMALLER: {fontSize: 10},
+  SIZE_LARGER: {fontSize: 24},
+  SIZE_HUGE: {fontSize: 32},
 };
 
 const OLD_INLINE_STYLES = OLD_COLORS.reduce((result, color, i) => {
-  result[`COLOR${i}`] = { color };
-  result[`BACKGROUND_COLOR${i}`] = { backgroundColor: color };
+  result[`COLOR${i}`] = {color};
+  result[`BACKGROUND_COLOR${i}`] = {backgroundColor: color};
   return result;
 }, OLD_INLINE_STYLES_SIZE);
 
 const OLD_BLOCK_TYPES = {
   ALIGN_CENTER: 'align-center',
   ALIGN_RIGHT: 'align-right',
-  ALIGN_JUSTIFY: 'align-justify'
+  ALIGN_JUSTIFY: 'align-justify',
 };
 
 const URL_REGEX = urlRegex();
@@ -318,7 +318,7 @@ class MarkupGenerator {
         let originalContent = content;
 
         const oldStyles = style.toArray()
-          .filter(style => Object.keys(OLD_INLINE_STYLES).indexOf(style) !== -1);
+          .filter((style) => Object.keys(OLD_INLINE_STYLES).indexOf(style) !== -1);
         if (oldStyles.length > 0) {
           const styles = oldStyles.reduce((result, style) => {
             return Object.keys(OLD_INLINE_STYLES[style]).reduce((r, prop) => {
@@ -326,7 +326,7 @@ class MarkupGenerator {
               return r;
             }, result);
           }, {});
-          const stringifyStyles = Object.keys(styles).map(prop => {
+          const stringifyStyles = Object.keys(styles).map((prop) => {
             const val = prop === 'fontSize' ? `${styles[prop]}px` : styles[prop];
             return `${decamelize(prop, '-')}: ${val};`;
           }).join(' ');
